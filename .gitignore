@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.DS_Store
+docs/SCRUB_RULES.md
+**/state/
+**/runs/
+**/logs/
+credentials.json
+automations.json

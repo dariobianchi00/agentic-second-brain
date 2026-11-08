@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agentic-second-brain",
+  "description": "An agentic second brain for Claude Code: scoped agents with memory and autonomy levels, a skills pack, and a scheduler for unattended runs (macOS).",
+  "owner": { "name": "Dario Bianchi" },
+  "plugins": [
+    {
+      "name": "agents",
+      "description": "Persistent, scoped agents with autonomy levels, memory, action trackers, commons/handoffs, a scope firewall, and a scheduler toolkit (macOS). Branch of Norman Noble's agent-framework (MIT).",
+      "source": "./plugins/agents",
+      "category": "productivity"
+    },
+    {
+      "name": "brain",
+      "description": "Skills for running a second brain: meeting transcripts and sync, writing in your own voice, analysis, market research, PRDs, decks, CV tailoring, job sweeps and more.",
+      "source": "./plugins/brain",
+      "category": "productivity"
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--
+  cv-plus DEDICATED CV TEMPLATE (body only) — clean two-page A4 layout.
+  The repeating name/contact header and page margins are supplied by cdp_pdf.py (Chrome
+  DevTools headerTemplate + margins), NOT by this file. Keep the styles block intact.
+  The skill replaces everything between CONTENT-START and CONTENT-END (see body).
+-->
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Helvetica Neue", Arial, "Liberation Sans", sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.36;
+    color: #000;
+  }
+
+  .headline {
+    font-weight: 700;
+    font-size: 12pt;
+    border-bottom: 1.4pt solid #000;
+    padding-bottom: 4px;
+    margin: 0 0 10px 0;
+  }
+  .section {
+    font-weight: 700;
+    font-size: 12pt;
+    border-bottom: 1.4pt solid #000;
+    padding-bottom: 3px;
+    margin: 16px 0 7px 0;
+  }
+  p { margin: 4px 0; }
+  .summary { margin: 0 0 6px 0; text-align: justify; }
+  .competencies { margin: 0 0 4px 0; }
+
+  .role { margin-top: 9px; page-break-inside: avoid; }
+  .role-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .role-head .co { font-weight: 700; }
+  .role-head .dates { font-weight: 700; white-space: nowrap; padding-left: 12px; }
+  .role-title { font-weight: 700; }
+  .role-desc { margin: 1px 0 2px 0; }
+
+  ul { margin: 3px 0 4px 0; padding-left: 17px; }
+  li { margin-bottom: 2px; }
+
+  .role-oneline { display: flex; justify-content: space-between; margin-top: 6px; }
+  .role-oneline .lhs { font-weight: 700; }
+  .role-oneline .dates { font-weight: 700; white-space: nowrap; padding-left: 12px; }
+
+  .edu-row { display: flex; justify-content: space-between; margin-top: 6px; }
+  .edu-row .lhs strong { font-weight: 700; }
+  .edu-row .dates { font-weight: 700; }
+  a { color: #000; }
+</style>
+</head>
+<body>
+
+<!-- CONTENT-START -->
+
+  <div class="headline">HEADLINE / POSITIONING LINE HERE</div>
+
+  <p class="summary">Summary paragraph here.</p>
+
+  <div class="section">Core Competencies</div>
+  <p class="competencies">Comp A &middot; Comp B &middot; Comp C</p>
+
+  <div class="section">Professional Experience</div>
+
+  <div class="role">
+    <div class="role-head"><span class="co">COMPANY — Location</span><span class="dates">YYYY – now</span></div>
+    <div class="role-title">Title.</div>
+    <p class="role-desc">One-to-two sentence role description.</p>
+    <ul>
+      <li>Achievement bullet with a real, sourced metric.</li>
+    </ul>
+  </div>
+
+  <div class="role-oneline"><span class="lhs">OLDER COMPANY — role</span><span class="dates">YYYY – YYYY</span></div>
+
+  <div class="section">Education</div>
+  <div class="edu-row"><span class="lhs"><strong>Degree</strong><br>Institution — City, Country</span><span class="dates">YYYY</span></div>
+
+  <div class="section">Additional Information</div>
+  <p><strong>Languages:</strong> Language A, Language B</p>
+
+<!-- CONTENT-END -->
+
+</body>
+</html>

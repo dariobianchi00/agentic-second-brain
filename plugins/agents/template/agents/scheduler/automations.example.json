@@ -1,0 +1,73 @@
+{
+  "_about": "Automation registry for health.py (the daily health check). Copy to automations.json and edit. One entry per automation that health.py should watch. JSON, not YAML: /usr/bin/python3 (3.9, stdlib only) must parse it. Scheduler tasks are NOT listed here: health.py reads every `Enabled: true` task from agents/scheduled-tasks.md and only takes per-task extras (outputs, grace, fix) from `scheduler_tasks.overrides`. Paths: relative = workspace root, `~` = home, `{date}` = the slot's date (YYYY-MM-DD). Times are judged in AWAKE minutes (pmset -g log full-wake intervals), not wall-clock. `scope` = the run-record folder a finding lands in (default `general`). `fix` = the one-line hint printed next to a failure, keyed by failure code. Entry kinds: launchd-job (checks: plist, tick, slot), server (plist, http), mcp (mcp-registered, mcp-credentials, mcp-reachable). Rule of thumb: no new automation without an entry here.",
+  "version": 1,
+  "daily_at": "08:30",
+  "daily_cutoff": "20:30",
+  "resend_days": 3,
+  "tick_stale_awake_hours": 3,
+  "scheduler_tasks": {
+    "register": "agents/scheduled-tasks.md",
+    "cron_log": "agents/scheduler/logs/cron.log",
+    "grace_awake_min": 90,
+    "fix": {
+      "missed": "Open the lid ~10 min; check `tail -20 agents/scheduler/logs/cron.log` for 'deferred' / 'CLI not found'. Manual run: `TICK_SKIP_WAKE_CHECK=1 bash agents/scheduler/tick.sh`",
+      "retry-cap": "Read the failed run record in agents/scheduler/runs/, fix the cause, then delete the task's key from agents/scheduler/state/attempts.json (or wait for the next slot)",
+      "failed": "Open the task's latest run record (agents/scheduler/runs/) and the scheduler log: first error line",
+      "output-stale": "Task updated Last run but not its output: read its run record / scheduler log",
+      "no-record": "Task ran but wrote no run record: check prompt.md § Outcome report was followed"
+    },
+    "overrides": {
+      "weekly-review": {
+        "outputs": ["agents/example-agent/memory/scheduled/inbox.md"],
+        "fix": {"failed": "Run the review interactively with the agent and read the run record"}
+      }
+    }
+  },
+  "automations": [
+    {
+      "id": "agent-scheduler",
+      "kind": "launchd-job",
+      "label": "com.my-workspace.agent-scheduler",
+      "plist": "~/Library/LaunchAgents/com.my-workspace.agent-scheduler.plist",
+      "schedule": "every 10 min (StartInterval 600) + RunAtLoad; tick.sh -> gate.py -> claude -p",
+      "log": "agents/scheduler/logs/cron.log",
+      "checks": ["plist", "tick"],
+      "how_to_check": "Last `gate:` line in cron.log must be < 3h of AWAKE time old. A `starting` line with no later gate line = harness still running (hung after 3h).",
+      "fix": {
+        "plist": "Reinstall: `bash agents/scheduler/install-launchd.sh`",
+        "tick-stale": "`launchctl list | grep agent-scheduler` (loaded? last exit?); reinstall: `bash agents/scheduler/install-launchd.sh`",
+        "hung": "A Claude run has been going for hours: `ps aux | grep 'claude -p'`; tail agents/scheduler/logs/cron.log"
+      }
+    },
+    {
+      "id": "rss-digest-fetch",
+      "kind": "launchd-job",
+      "label": "com.my-workspace.rss-digest",
+      "plist": "~/Library/LaunchAgents/com.my-workspace.rss-digest.plist",
+      "schedule": "0 7 * * *",
+      "grace_awake_min": 30,
+      "outputs": ["Knowledge/Digest/{date}.md"],
+      "log": "agents/scheduler/logs/rss-digest.log",
+      "checks": ["plist", "slot"],
+      "how_to_check": "Today's digest file written after the 07:00 slot once the Mac has been awake 30 min past 07:00. Log written but digest not = the fetch crashed.",
+      "fix": {
+        "plist": "Reload: `launchctl load -w ~/Library/LaunchAgents/com.my-workspace.rss-digest.plist`",
+        "missed": "Run the fetch script by hand and read its log",
+        "failed": "`tail -30 agents/scheduler/logs/rss-digest.log`: the fetch ran but wrote no digest"
+      }
+    },
+    {
+      "id": "mcp:notes-search",
+      "kind": "mcp",
+      "server": "notes-search",
+      "schedule": "on demand",
+      "checks": ["mcp-registered", "mcp-credentials"],
+      "credential_env": ["NOTES_TOKEN_PATH"],
+      "how_to_check": "The server is registered in ~/.claude.json and the file named by NOTES_TOKEN_PATH in its env exists.",
+      "fix": {
+        "mcp-registered": "Register it again with `claude mcp add notes-search ...`",
+        "mcp-credentials": "Re-run the server's login step to recreate its token file"
+      }
+    }
+  ]
+}

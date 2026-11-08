@@ -1,0 +1,30 @@
+{
+  "skill_name": "product-feedback",
+  "setup": "CLAUDE.md configures Products: Acme Notes, Acme Health, Acme Learn; routing hints: wearables/sleep -> Acme Health, notes/memory -> Acme Notes.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Log this Acme Notes feedback: \"Honestly the onboarding blew me away, felt like it actually understood me within minutes. But then the app crashed twice when I tried to connect my Google account and I almost gave up.\" — beta user, signed up yesterday",
+      "expected_output": "Creates Customer_Feedback.md if absent, files under Acme Notes, net rating around -1 or 0 (praise + blocking bug), Liked = onboarding/understanding, Bug = [High] Google connect crash, two quotes, ledger row added, HTML regenerated, count=1.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "here's a user comment to capture: the wearable sync is hit or miss, sometimes my sleep data just doesn't show up. but when it works the daily energy insights are genuinely useful and i check them every morning.",
+      "expected_output": "Routes to Acme Health (wearable routing hint), rating 0/mixed, Liked = energy insights / daily habit, Disliked or Bug = sync reliability, ledger row, HTML + counts updated.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "add another piece of acme notes feedback — \"the memory feature is the killer app for me, nothing else remembers context like this. would pay double.\" power user from the community forum",
+      "expected_output": "Files under existing Acme Notes section, rating +2, Liked = memory/context + willingness to pay, positive quote, ledger row appended (id 2 for Acme Notes), Acme Notes count -> 2 and band recomputed; no overall score.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "got some feedback but not sure where it goes: \"the AI coach kept losing the thread of our conversation and I had to repeat myself a lot.\"",
+      "expected_output": "Product is ambiguous (could be several) — skill should ASK one clarifying question to identify the product rather than guessing/misfiling.",
+      "files": []
+    }
+  ]
+}

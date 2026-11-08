@@ -1,0 +1,2 @@
+id,claim_or_figure,value,unit,currency,data_year,source_name,source_type,retrieval_method,url,published_date,accessed_date,tags,load_bearing,confidence,notes
+S1,example: smartphone users Ghana,0,people,n/a,2025,National Communications Authority,primary,T1-webfetch,https://example.org,2026-01-15,2026-11-04,,yes,High,source_type = primary|secondary|second-hand; retrieval_method = T1-webfetch|T2-api|T3-pdf|T4-playwright|T5-authenticated|T5-connector; tags = STALE;SECONDARY-UNVERIFIED

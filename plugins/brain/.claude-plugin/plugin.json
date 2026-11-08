@@ -1,0 +1,10 @@
+{
+  "name": "brain",
+  "version": "1.0.0",
+  "description": "Skills for running a second brain in Claude Code: meeting transcripts and sync, writing in your own voice, analysis, market research, PRDs, decks, CV tailoring, job sweeps and more. Invoke as /brain:<skill>.",
+  "author": { "name": "Dario Bianchi" },
+  "homepage": "https://github.com/dariobianchi00/agentic-second-brain",
+  "repository": "https://github.com/dariobianchi00/agentic-second-brain",
+  "license": "MIT",
+  "keywords": ["second-brain", "skills", "productivity", "writing", "meetings"]
+}

@@ -1,0 +1,27 @@
+{
+  "_comment": "Copy to <vault>/Knowledge/Tech_News/config.json and edit. Malaysia is only an example region.",
+  "region_name": "Malaysia",
+  "region_short": "MY",
+  "wider_region": "Southeast Asia",
+  "output_dir": "Knowledge/Tech_News",
+  "cutoff_hours": 48,
+  "google_news": {"hl": "en-MY", "gl": "MY", "ceid": "MY:en"},
+  "rss_feeds": {
+    "Digital News Asia": "https://www.digitalnewsasia.com/rss.xml",
+    "e27 (via Google News)": "https://news.google.com/rss/search?hl=en-MY&gl=MY&ceid=MY:en&q=site:e27.co+when:2d",
+    "Tech in Asia": "https://www.techinasia.com/feed",
+    "KrASIA (via Google News)": "https://news.google.com/rss/search?hl=en-MY&gl=MY&ceid=MY:en&q=site:kr-asia.com+when:2d",
+    "The Edge (via Google News)": "https://news.google.com/rss/search?hl=en-MY&gl=MY&ceid=MY:en&q=site:theedgemalaysia.com+intitle:tech+OR+intitle:startup+OR+intitle:fintech+OR+intitle:AI+OR+intitle:digital+when:2d",
+    "Malay Mail Tech (via Google News)": "https://news.google.com/rss/search?hl=en-MY&gl=MY&ceid=MY:en&q=site:malaymail.com/news/tech-gadgets+when:2d",
+    "Fintech News Malaysia": "https://fintechnews.my/feed/"
+  },
+  "google_news_queries": [
+    "Malaysia tech startup",
+    "Malaysia AI",
+    "Malaysia digital economy",
+    "Malaysia fintech",
+    "SEA digital banking"
+  ],
+  "fintech_focus": "payments, neobanks, digital banking, e-wallets, crypto/Web3 regulation, lending platforms, insurtech, central-bank and regulator policy, cross-border payments, remittances, financial inclusion",
+  "fintech_key_players": "Touch 'n Go, GrabFinancial, Boost, BigPay, bank digital arms, Sea Money, GoTo Financial, regional regulators (BNM, MAS, OJK, BSP)"
+}
