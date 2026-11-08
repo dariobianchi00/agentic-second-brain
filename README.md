@@ -52,6 +52,8 @@ Design notes for the agent framework: [`plugins/agents/PHILOSOPHY.md`](plugins/a
 
 The `agents` plugin is a branch of [Norman Noble's agent-framework](https://github.com/normannoble/agent-framework) (MIT). The autonomy model, the session mechanics and the memory design are his. The scope firewall, commons, scheduler toolkit and hooks are what I added. See [`plugins/agents/CHANGELOG.md`](plugins/agents/CHANGELOG.md).
 
+The 16 skills in the `brain` plugin are mine. Where a skill builds on someone else's published method, the skill names the source.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
