@@ -1,5 +1,7 @@
 # Agentic Second Brain
 
+[![ci](https://github.com/dariobianchi00/agentic-second-brain/actions/workflows/ci.yml/badge.svg)](https://github.com/dariobianchi00/agentic-second-brain/actions/workflows/ci.yml)
+
 Most AI assistants wait for you to tell them what to do. Mine don't: they open every session with a view on my priorities, remember what we decided last week, and tell me when the conversation drifts.
 
 This is the setup I run my work and my life on, every day, in [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Same system, with my data taken out.
