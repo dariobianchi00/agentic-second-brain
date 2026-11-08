@@ -12,7 +12,7 @@
     },
     {
       "name": "brain",
-      "description": "Skills for running a second brain: meeting transcripts and sync, writing in your own voice, analysis, market research, PRDs, decks, CV tailoring, job sweeps and more.",
+      "description": "Skills for running a second brain: meeting transcripts and sync, writing in your own voice, analysis, market research, decks, CV tailoring, job sweeps and more.",
       "source": "./plugins/brain",
       "category": "productivity"
     }
