@@ -128,7 +128,7 @@ class Env:
             ]}
         self.save_registry()
         self.sent_log = j("sent.log")
-        self.env = dict(os.environ, HEALTH_REGISTRY=j("automations.json"), HEALTH_STATE_FILE=j("state", "health.json"),
+        self.env = dict(os.environ, SCHED_PLATFORM="macos", HEALTH_REGISTRY=j("automations.json"), HEALTH_STATE_FILE=j("state", "health.json"),
                         HEALTH_LOG=j("logs", "health.log"), HEALTH_PMSET_BIN=j("pmset"), HEALTH_CLAUDE_JSON=self.claude_json,
                         HEALTH_WORKSPACE=self.d, HEALTH_BOOTTIME="off", HEALTH_NETWORK="1",
                         SCHED_REGISTER=self.reg, SCHED_RUNS_DIR=j("runs"), SCHED_STATE_FILE=j("state", "attempts.json"),
