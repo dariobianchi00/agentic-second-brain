@@ -211,8 +211,8 @@ Multiple filepaths are supported in one invocation — process each file through
      max-width: 100%;
      color: #333;
    }
-   h1, h2, h3 { color: #c00; margin-top: 1.2em; }
-   h1 { font-size: 22pt; border-bottom: 2px solid #c00; padding-bottom: 6px; }
+   h1, h2, h3 { color: #000; margin-top: 1.2em; }
+   h1 { font-size: 22pt; border-bottom: 2px solid #000; padding-bottom: 6px; }
    h2 { font-size: 16pt; }
    h3 { font-size: 13pt; }
    table { border-collapse: collapse; width: 100%; margin: 1em 0; }
@@ -220,7 +220,7 @@ Multiple filepaths are supported in one invocation — process each file through
    th { background: #f5f5f5; font-weight: 600; }
    code { background: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-size: 10pt; }
    pre { background: #f4f4f4; padding: 12px; border-radius: 4px; overflow-x: auto; }
-   blockquote { border-left: 3px solid #c00; padding-left: 12px; color: #666; }
+   blockquote { border-left: 3px solid #999; padding-left: 12px; color: #666; }
    a { color: #0066cc; }
    ```
 
