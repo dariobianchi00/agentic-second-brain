@@ -63,6 +63,10 @@ flowchart LR
 
 ## A day with it
 
+<img src="docs/demo/herdr-sidebar.png" alt="Herdr sidebar: one pane per agent with its status" width="360">
+
+*My Herdr sidebar: one pane per agent, each with its role and status.*
+
 1. **Overnight**, the scheduler runs what is due: inbox triage, a weekly meeting sync, any handoff another agent left open. Each run writes to that agent's inbox and sends me one line on Telegram.
 2. **Morning**, I start my chief of staff. It reads its tracker, the open handoffs and what came in overnight, then proposes the day's three priorities and the one thing it disagrees with. Real first-session output: [`docs/demo/atlas-first-session.md`](docs/demo/atlas-first-session.md).
 3. **During the day**, meetings go through `/brain:transcript`: notes, decisions and action items land in the right files; anything ambiguous is proposed one by one. Real output: [`docs/demo/transcript-pricing-meeting.md`](docs/demo/transcript-pricing-meeting.md).
