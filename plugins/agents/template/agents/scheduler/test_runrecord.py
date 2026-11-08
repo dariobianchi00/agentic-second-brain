@@ -76,7 +76,7 @@ class Env:
             p = os.path.join(self.d, name)
             open(p, "w").write(body)
             os.chmod(p, 0o755)
-        self.env = dict(os.environ,
+        self.env = dict(os.environ, SCHED_PLATFORM="macos",
                         SCHED_REGISTER=self.reg,
                         SCHED_LOGS_DIR=os.path.join(self.d, "logs"),
                         SCHED_STATE_FILE=os.path.join(self.d, "state", "attempts.json"),
