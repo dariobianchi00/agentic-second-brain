@@ -45,7 +45,7 @@ This gives every project these skills:
 | `/agents:next` | The single next best action across the org |
 | `/agents:doctor` | Health review: startup cost, tracker and memory hygiene, staleness. Read-only, recommends the next commands |
 | `/agents:ask` | Ask another agent in the same workspace (Herdr only): fresh pane, peer session, written reply, pane closed |
-| `/agents:schedule` | Unattended tasks: `add`, `list`, `remove`, `enable`, `disable`, `status`, `install` the hourly launchd/cron timer. A gate script runs Claude only when a task is due |
+| `/agents:schedule` | Unattended tasks: `add`, `list`, `remove`, `enable`, `disable`, `status`, `install` the scheduler timer (launchd, systemd/cron, or Windows Task Scheduler via WSL). A gate script runs Claude only when a task is due |
 
 Then, in the repo where you want agents:
 

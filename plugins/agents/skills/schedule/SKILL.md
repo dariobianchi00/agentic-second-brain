@@ -1,7 +1,7 @@
 ---
-description: Manage the workspace's unattended scheduled tasks — list, add, remove, enable, disable a task in agents/scheduled-tasks.md; check the timer and last runs with status; install the launchd (macOS) or cron timer. Use /agents:schedule, /agents:schedule add, /agents:schedule status.
+description: Manage the workspace's unattended scheduled tasks — list, add, remove, enable, disable a task in agents/scheduled-tasks.md; check the timer and last runs with status; install the timer (launchd on macOS, systemd user timer or cron on Linux, Task Scheduler + WSL on Windows). Use /agents:schedule, /agents:schedule add, /agents:schedule status.
 disable-model-invocation: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(date), Bash(ls), Bash(tail), Bash(launchctl list), Bash(crontab -l), Bash(bash agents/scheduler/tick.sh --dry-run), Bash(bash agents/scheduler/install-launchd.sh), Bash(bash agents/scheduler/setup.sh), Bash(uname), AskUserQuestion
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(date), Bash(ls), Bash(tail), Bash(launchctl list), Bash(crontab -l), Bash(bash agents/scheduler/tick.sh --dry-run), Bash(bash agents/scheduler/install-launchd.sh), Bash(bash agents/scheduler/install-linux.sh), Bash(bash agents/scheduler/install-linux.sh --print), Bash(systemctl --user list-timers), Bash(uname), AskUserQuestion
 argument-hint: [list | add | remove <id> | enable <id> | disable <id> | status | install]
 ---
 
@@ -19,7 +19,7 @@ Route on the first word of `$ARGUMENTS` (empty = `list`).
 
 ## list
 
-Table, one row per task: `| Id | Agent | Schedule | Mode | Ceiling | Enabled | Last run |`. Below it one line: `Timer: <installed as <label> | not installed>` (macOS: `launchctl list | grep agent-scheduler`; Linux: `crontab -l | grep agent-scheduler`). End with `Add: /agents:schedule add · Status: /agents:schedule status`.
+Table, one row per task: `| Id | Agent | Schedule | Mode | Ceiling | Enabled | Last run |`. Below it one line: `Timer: <installed as <label> | not installed>` (macOS: `launchctl list | grep agent-scheduler`; Linux: `systemctl --user list-timers` then `crontab -l`, look for `agent-scheduler`; WSL: say `Windows timer: check with schtasks /Query /TN <workspace>-agent-scheduler from Windows`). End with `Add: /agents:schedule add · Status: /agents:schedule status`.
 
 ## add
 
@@ -54,7 +54,11 @@ Show:
 
 ## install
 
-`uname` → macOS: run `bash agents/scheduler/install-launchd.sh`; Linux: `bash agents/scheduler/setup.sh`. Show the script's output. Then set `scheduler: launchd` (or `cron`) in the frontmatter of `agents/CONVENTIONS.md`. Say (macOS): `Timer ticks every 10 minutes and at login. Claude runs only when a task is due and the Mac is fully awake. Check: /agents:schedule status. Optional: install-health-launchd.sh (daily health check) and install-tokencheck-launchd.sh (weekly token check), see agents/scheduler/README.md.` On Linux (cron): `Timer fires at :07 every hour.`
+`uname` (and, on Linux, `/proc/version` containing `microsoft` = WSL):
+- macOS: run `bash agents/scheduler/install-launchd.sh`. Set `scheduler: launchd`. Say: `Timer ticks every 10 minutes and at login. Claude runs only when a task is due and the Mac is fully awake. Check: /agents:schedule status. Optional: install-health-launchd.sh (daily health check) and install-tokencheck-launchd.sh (weekly token check), see agents/scheduler/README.md.`
+- Linux: run `bash agents/scheduler/install-linux.sh --print` first and show it, then `bash agents/scheduler/install-linux.sh`. It uses systemd user timers, or crontab lines when `systemctl --user` is unavailable, and also installs the health/token checks when `automations.json` / `credentials.json` exist. Set `scheduler: systemd` or `cron` (the script prints which). Say: `Timer ticks every 10 minutes and after login. Check: /agents:schedule status. Timers stop at logout unless you run: loginctl enable-linger "$USER".`
+- WSL (Windows): do not install from inside WSL. Tell the principal to run, from Windows PowerShell in the `agents\scheduler` folder: `powershell -ExecutionPolicy Bypass -File install-windows.ps1 -Print`, then the same without `-Print`. Claude Code must be installed inside WSL. Set `scheduler: windows-task` once they confirm.
+Show the script's output. Write the `scheduler:` value in the frontmatter of `agents/CONVENTIONS.md`.
 
 ## Rules
 

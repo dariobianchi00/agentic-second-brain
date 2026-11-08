@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Weekly token check. Plain script — no Claude. macOS only (pmset, launchd).
+"""Weekly token check. Plain script — no Claude. macOS, Linux, Windows via WSL (wake probe: macOS only).
 
 Reads the credential registry (credentials.json; start from credentials.example.json) and
 runs ONE cheap, read-only test per enabled credential:
@@ -26,14 +26,15 @@ exact re-login command, then the ✅ list. Run records via `runrecord.py write`
 (task weekly-token-check), one per scope; a scope's record holds only its own credentials
 (scope firewall).
 
-Schedule (sleep-aware, like health.py): launchd fires hourly at :00 (install with
-install-tokencheck-launchd.sh). The check runs ONCE per ISO week, at the first FULLY-awake
+Schedule (sleep-aware on macOS, like health.py): the timer fires hourly at :00 (install with
+install-tokencheck-launchd.sh on macOS, install-linux.sh on Linux, install-windows.ps1 on
+Windows; on Linux/WSL every run counts as awake). The check runs ONCE per ISO week, at the first FULLY-awake
 run at/after Monday 08:00 (`run.at` in the registry; a Monday spent with the lid closed is
 caught up on the next full wake that week). DarkWake or no network → exits and retries next
 hour. A failed send is retried on the next hourly runs (3 tries per week).
 
 Usage:
-  tokencheck.py                    # scheduled run (launchd): no-op unless this week's run is due
+  tokencheck.py                    # scheduled run (timer): no-op unless this week's run is due
   tokencheck.py --force            # run now even if done this week / before Monday 08:00
   tokencheck.py --dry-run          # run all checks, print table + message; no send/state/records
   tokencheck.py --only a,b         # only these credential ids (implies --force)
@@ -473,7 +474,7 @@ def table(results, now):
 
 # ───────────────────────── main ─────────────────────────
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Weekly token check (macOS)")
+    ap = argparse.ArgumentParser(description="Weekly token check (macOS, Linux, WSL)")
     ap.add_argument("--dry-run", action="store_true", help="run checks, print table + message; no send, state or records")
     ap.add_argument("--force", action="store_true", help="run now even if done this week / before Monday 08:00")
     ap.add_argument("--assume-awake", action="store_true", help="skip the full-wake check")

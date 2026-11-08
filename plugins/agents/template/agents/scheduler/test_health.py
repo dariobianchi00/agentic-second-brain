@@ -474,7 +474,7 @@ for name in ("automations.example.json", "automations.json"):
     ids = [a["id"] for a in real["automations"]]
     check(f"{name}: unique ids", len(ids) == len(set(ids)))
     check(f"{name}: every entry has kind/schedule", all(a.get("kind") and a.get("schedule") for a in real["automations"]))
-    check(f"{name}: kinds valid", all(a["kind"] in ("launchd-job", "scheduler-task", "server", "mcp", "check") for a in real["automations"]))
+    check(f"{name}: kinds valid", all(a["kind"] in ("timer-job", "launchd-job", "scheduler-task", "server", "mcp", "check") for a in real["automations"]))
     check(f"{name}: overrides name register tasks",
           set(real["scheduler_tasks"].get("overrides", {})) <= {t for t, _ in __import__("gate").parse_tasks(register_text())})
 

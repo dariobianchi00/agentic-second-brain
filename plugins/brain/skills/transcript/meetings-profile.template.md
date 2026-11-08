@@ -15,7 +15,7 @@ Owns · Pre-flight memories · reconcile · new actions · notes · people · ex
 steps · Log · Never · Closing block lines · /brain:meeting-sync rules.
 
 A VAULT-DEFAULT profile can be just a routing table: "meeting is about X → apply
-Agents/<scope>/<agent>/meetings-profile.md". Then add the default-run rules:
+agents/<scope>/<agent>/meetings-profile.md". Then add the default-run rules:
 print the profile actually applied in Step-Zero ("Profile: …(via default)"), tag
 CHANGELOG entries [default], skip personal-scope meetings in Work Mode, and pull
 every source the routed profiles list.
@@ -41,8 +41,8 @@ Step-Zero extra lines (optional): `Direct reports in transcript: [names / none]`
 
 Read end-to-end this turn, not from memory:
 - `ACTION_ITEMS.md` — sections <names>;
-- the **Open** section of every `Agents/<scope>/*/actions.md` (if you run agents);
-- the **Open** entries of any shared handoffs file (e.g. `Agents/_commons/<scope>/HANDOFFS.md`).
+- the **Open** section of every `agents/<scope>/*/actions.md` (if you run agents);
+- the **Open** entries of any shared handoffs file (e.g. `agents/_commons/<scope>/HANDOFFS.md`).
 
 For every open item touching this meeting's topic, product or people — whether or not the meeting produced anything new — decide: DONE · KILLED · PROGRESSED · BLOCKED/AT RISK · SUPERSEDED · NO CHANGE.
 

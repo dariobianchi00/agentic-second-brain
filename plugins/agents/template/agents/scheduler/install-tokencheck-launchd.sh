@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the token-check LaunchAgent. macOS only (launchd).
+# Install the token-check LaunchAgent (macOS). Linux: install-linux.sh; Windows: install-windows.ps1.
 # Weekly token check (tokencheck.py). Plain Python, no Claude.
 # Fires hourly at :00. tokencheck.py runs its checks once per ISO week, at the first
 # fully-awake run at/after Monday 08:00 (run.at in credentials.json); other runs are no-ops.
@@ -68,7 +68,7 @@ PLIST_EOF
 
 if [[ "${1:-}" == "--print-plist" ]]; then plist; exit 0; fi
 
-[[ "$(uname)" == "Darwin" ]] || { echo "Error: macOS only (launchd)."; exit 1; }
+[[ "$(uname)" == "Darwin" ]] || { echo "Error: this installer is for macOS (launchd). Linux: install-linux.sh · Windows: install-windows.ps1"; exit 1; }
 [[ -f "$SCHED/tokencheck.py" ]] || { echo "Error: $SCHED/tokencheck.py missing"; exit 1; }
 [[ -f "$SCHED/credentials.json" ]] || { echo "Error: $SCHED/credentials.json missing — copy credentials.example.json to credentials.json and edit it"; exit 1; }
 

@@ -7,7 +7,7 @@ naming-examples: Atlas — carries the load; Hermes — messenger; Athena — st
 reserved: [Atlas]
 ticket-column: Ticket
 inbound: none
-scheduler: launchd
+scheduler: launchd   # or systemd | cron | windows-task
 gap-notice: 2h
 harness: claude
 layout: multi-domain
@@ -39,9 +39,9 @@ This file carries **workspace facts only**. Every rule (scope firewall, Work Mod
 
 `agents/_commons/<scope>/` — `HANDOFFS.md` (agent-to-agent work requests), `RETRO.md` (weekly retro by the chief of staff).
 
-## 4. Scheduler (macOS only)
+## 4. Scheduler
 
-`agents/scheduler/` (launchd). Every scheduled run writes a run record and, if configured, a Telegram message. No new automation without an entry in `scheduler/automations.json`.
+`agents/scheduler/` (launchd on macOS; systemd or cron on Linux; Task Scheduler + WSL on Windows). Every scheduled run writes a run record and, if configured, a Telegram message. No new automation without an entry in `scheduler/automations.json`.
 
 ## 5. Reserved names
 

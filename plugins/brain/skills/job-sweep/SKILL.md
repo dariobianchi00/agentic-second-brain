@@ -84,7 +84,7 @@ Then in chat: a short table of section 2 and the ask — "which do you want thro
 
 ## Cadence
 - On demand: `/brain:job-sweep` (or "run the sweep").
-- Weekly, **attended** until `attended_until`; after that, the user decides whether it may run unattended via `/agents:schedule` (the scheduler is macOS-only, launchd).
+- Weekly, **attended** until `attended_until`; after that, the user decides whether it may run unattended via `/agents:schedule` (the scheduler: macOS tested, Linux and Windows via WSL dry-run tested).
 
 ## Files
 - `SKILL.md` — this file.

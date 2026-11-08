@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Daily automation health check. Plain script — no Claude. macOS only (pmset, launchd).
+"""Daily automation health check. Plain script — no Claude. macOS, Linux, Windows via WSL.
 
 Reads the registry (automations.json; start from automations.example.json) + every enabled
 task in agents/scheduled-tasks.md and checks: ran in its window · last status not failed ·
-retry cap not reached · output artifact fresh · log fresh · server answers · launchd plist
-present · MCP server registered / credential files present / endpoint reachable · scheduler
+retry cap not reached · output artifact fresh · log fresh · server answers · timer installed
+(launchd plist / systemd user timer / crontab line / Windows scheduled task) · MCP server registered / credential files present / endpoint reachable · scheduler
 still ticking.
 
 Sleep-aware: a laptop is often asleep overnight and catches up on wake. "Missed" and "stale"
@@ -15,7 +15,16 @@ once the Mac has been fully awake for the grace window (scheduler tasks 90 min,
 registry-tunable) after the slot. If the pmset log can't be read, it falls back to
 wall-clock and says so in the message.
 
-Schedule (launchd, hourly at :30 — install with install-health-launchd.sh):
+Platforms (SCHED_PLATFORM=macos|linux|wsl overrides detection): the awake-time logic and
+the full-wake probe are macOS only. On Linux and WSL there is no pmset: every run counts
+as awake and grace windows are judged on wall-clock time (the message says so). The
+timer check looks for the entry's platform field: `plist` (macOS), `systemd_timer` or
+`cron_marker` (Linux; either one installed is enough), `windows_task` (WSL, queried via
+schtasks.exe; falls back to the Linux fields). No field for this platform → the timer
+check is skipped with an OK note.
+
+Schedule (hourly at :30 — install-health-launchd.sh on macOS, install-linux.sh on Linux,
+install-windows.ps1 on Windows):
   * every run, fully awake only: scheduler tick stale > 3 h of awake time → urgent alert
     (once per stale episode, repeated every resend_days while unchanged).
   * daily report: the first fully-awake run at/after 08:30. If an item is still inside its
@@ -28,7 +37,7 @@ Schedule (launchd, hourly at :30 — install with install-health-launchd.sh):
     has findings (the default scope if all green); a scope's record only holds its own items.
 
 Usage:
-  health.py                       # scheduled run (launchd)
+  health.py                       # scheduled run (timer)
   health.py --dry-run [--force-daily] [--assume-awake]
                                   # print findings + the message; no send, no state, no records
   health.py --force-daily         # run the daily report now even if done / before 08:30
@@ -36,7 +45,7 @@ Usage:
 
 Env overrides (tests): HEALTH_REGISTRY, HEALTH_STATE_FILE, HEALTH_LOG, HEALTH_PMSET_BIN,
 HEALTH_CLAUDE_JSON, HEALTH_WORKSPACE, HEALTH_BOOTTIME (epoch, "off"), HEALTH_NETWORK (1/0),
-SCHED_REGISTER, SCHED_RUNS_DIR, SCHED_STATE_FILE, SCHED_LOGS_DIR, SCHED_DEFAULT_SCOPE,
+HEALTH_SYSTEMCTL_BIN, HEALTH_CRONTAB_BIN, HEALTH_SCHTASKS_BIN, SCHED_PLATFORM, SCHED_REGISTER, SCHED_RUNS_DIR, SCHED_STATE_FILE, SCHED_LOGS_DIR, SCHED_DEFAULT_SCOPE,
 NOTIFY_SH, NOTIFY_DRY_RUN. Stdlib only, Python 3.9 (/usr/bin/python3).
 """
 import argparse, datetime as dt, json, os, re, socket, subprocess, sys, tempfile
@@ -68,6 +77,22 @@ ATTEMPTS = lambda: env("SCHED_STATE_FILE", gate.DEFAULT_STATE)
 NOTIFY = lambda: env("NOTIFY_SH", os.path.join(HERE, "notify.sh"))
 DEF = lambda: runrecord.default_scope()
 DELIVERED = runrecord.DELIVERED
+
+
+def platform():
+    """macos | linux | wsl. SCHED_PLATFORM overrides (tests, unusual setups)."""
+    v = os.environ.get("SCHED_PLATFORM")
+    if v:
+        return v
+    if sys.platform == "darwin":
+        return "macos"
+    try:
+        with open("/proc/version", encoding="utf-8", errors="replace") as f:
+            if "microsoft" in f.read().lower():
+                return "wsl"
+    except OSError:
+        pass
+    return "linux"
 
 
 def resolve(p, date=None):
@@ -157,6 +182,8 @@ def parse_power(text, now, awake_now, boottime=None):
 
 
 def read_pmset_log():
+    if platform() != "macos":
+        return ""
     try:
         r = subprocess.run([PMSET(), "-g", "log"], capture_output=True, text=True, timeout=60)
         return r.stdout if r.returncode == 0 else ""
@@ -165,7 +192,11 @@ def read_pmset_log():
 
 
 def fully_awake_now():
-    """(bool, reason). Same signal as tick.sh: Graphics capability = full wake. Fails open."""
+    """(bool, reason). Same signal as tick.sh: Graphics capability = full wake. Fails open.
+    Linux/WSL: no probe; the timer does not fire while suspended, so a run = awake."""
+    plat = platform()
+    if plat != "macos":
+        return True, f"no wake probe on {plat} (assumed awake)"
     try:
         r = subprocess.run([PMSET(), "-g", "systemstate"], capture_output=True, text=True, timeout=20)
         m = re.search(r"^Current System Capabilities are:\s*(.*)$", r.stdout, re.M)
@@ -184,6 +215,8 @@ def boottime(tz):
     try:
         if v:
             return dt.datetime.fromtimestamp(float(v), tz)
+        if platform() != "macos":
+            return None  # only used with pmset events
         out = subprocess.run(["/usr/sbin/sysctl", "-n", "kern.boottime"], capture_output=True, text=True, timeout=5).stdout
         m = re.search(r"sec = (\d+)", out)
         return dt.datetime.fromtimestamp(int(m.group(1)), tz) if m else None
@@ -217,8 +250,8 @@ def cron_state(path, tz):
         if "— starting" in msg or "- starting" in msg:
             running = (t, due)
             continue
-        # launchd never runs two ticks of the job at once, so ANY later gate line means the
-        # previous harness is gone (older tick.sh versions logged no "harness exited").
+        # launchd / systemd / Task Scheduler (IgnoreNew) never run two ticks at once, and the
+        # cron line is wrapped in flock, so ANY later gate line means the previous harness is gone (older tick.sh versions logged no "harness exited").
         running = None
         if "deferred" in msg:
             deferred.append((t, due))
@@ -346,11 +379,65 @@ def check_tick(ctx, a):
     return R(a["id"], scope, OK, detail=f"last tick {hm(ctx.last_tick)}")
 
 
-def check_plist(ctx, a):
-    p = resolve(a["plist"])
-    if os.path.exists(p):
-        return None
-    return R(a["id"], a.get("scope", DEF()), FAIL, "plist", f"plist missing: {p}", None, fix_for(a.get("fix"), "plist"))
+TIMER_FIX = {
+    "linux": "Reinstall: `bash agents/scheduler/install-linux.sh` (check: `systemctl --user list-timers` or `crontab -l`)",
+    "wsl": "Reinstall from Windows PowerShell: `install-windows.ps1` in agents\\scheduler (check: `schtasks /Query /TN <name>`)",
+}
+
+
+def _run_ok(argv, timeout=20):
+    """(returncode, stdout) or (None, error) when the command cannot run."""
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+        return r.returncode, r.stdout
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return None, str(e)
+
+
+def systemd_timer_installed(unit):
+    rc, _ = _run_ok([env("HEALTH_SYSTEMCTL_BIN", "systemctl"), "--user", "is-enabled", unit])
+    if rc is None:  # no systemctl: fall back to the unit file
+        return os.path.exists(os.path.expanduser(f"~/.config/systemd/user/{unit}"))
+    return rc == 0
+
+
+def cron_installed(marker):
+    rc, out = _run_ok([env("HEALTH_CRONTAB_BIN", "crontab"), "-l"])
+    return rc == 0 and any(line.rstrip().endswith("# " + marker) for line in out.splitlines())
+
+
+def windows_task_installed(name):
+    rc, _ = _run_ok([env("HEALTH_SCHTASKS_BIN", "schtasks.exe"), "/Query", "/TN", name])
+    return rc == 0
+
+
+def check_timer(ctx, a):
+    """Timer presence for this platform. → (FAIL result or None, note for an OK result)."""
+    plat, scope, fx = platform(), a.get("scope", DEF()), a.get("fix")
+    if plat == "macos":
+        if not a.get("plist"):
+            return None, "timer check skipped (no plist set for macOS)"
+        p = resolve(a["plist"])
+        if os.path.exists(p):
+            return None, "plist present"
+        return R(a["id"], scope, FAIL, "plist", f"plist missing: {p}", None, fix_for(fx, "plist")), ""
+    tried = []
+    if plat == "wsl" and a.get("windows_task"):
+        if windows_task_installed(a["windows_task"]):
+            return None, f"scheduled task {a['windows_task']} present"
+        tried.append(f"Windows task {a['windows_task']}")
+    if a.get("systemd_timer"):
+        if systemd_timer_installed(a["systemd_timer"]):
+            return None, f"systemd timer {a['systemd_timer']} enabled"
+        tried.append(f"systemd timer {a['systemd_timer']}")
+    if a.get("cron_marker"):
+        if cron_installed(a["cron_marker"]):
+            return None, f"crontab line {a['cron_marker']} present"
+        tried.append(f"crontab line # {a['cron_marker']}")
+    if not tried:
+        return None, f"timer check skipped (no timer field set for {plat})"
+    return R(a["id"], scope, FAIL, "timer", f"timer missing on {plat}: none of {', '.join(tried)}", None,
+             fix_for(fx, "timer", {"timer": TIMER_FIX.get(plat, TIMER_FIX["linux"])})), ""
 
 
 def check_slot_job(ctx, a):
@@ -518,7 +605,7 @@ def run_checks(ctx):
         if a["kind"] == "mcp":
             results.append(check_mcp(ctx, a))
             continue
-        r = check_plist(ctx, a) if "plist" in checks else None
+        r, note = check_timer(ctx, a) if ("plist" in checks or "timer" in checks) else (None, "")
         if r is None:
             if "tick" in checks:
                 r = check_tick(ctx, a)
@@ -527,7 +614,7 @@ def run_checks(ctx):
             elif "http" in checks:
                 r = check_http(ctx, a)
             else:
-                r = R(a["id"], a.get("scope", DEF()), OK, detail="plist present")
+                r = R(a["id"], a.get("scope", DEF()), OK, detail=note or "no check")
         results.append(r)
     results += check_sched_tasks(ctx)
     return results
@@ -677,7 +764,7 @@ def hhmm(s):
 
 # ───────────────────────── main ─────────────────────────
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Daily automation health check (macOS)")
+    ap = argparse.ArgumentParser(description="Daily automation health check (macOS, Linux, WSL)")
     ap.add_argument("--dry-run", action="store_true", help="print findings + message; no send, no state, no run records")
     ap.add_argument("--force-daily", action="store_true", help="run the daily report now")
     ap.add_argument("--assume-awake", action="store_true", help="skip the full-wake check")
@@ -704,7 +791,11 @@ def main(argv=None):
         log(f"registry unreadable: {e}", now)
         return 1
 
-    power = parse_power(read_pmset_log(), now, awake, boottime(now.tzinfo))
+    plat = platform()
+    if plat == "macos":
+        power = parse_power(read_pmset_log(), now, awake, boottime(now.tzinfo))
+    else:
+        power = Power([], None, True, f"no sleep data on {plat} — judged on wall-clock time")
     ctx = Ctx(now, power, registry, network_up())
     state = {} if a.dry_run and not os.path.exists(STATE_FILE()) else load_state()
     today = now.date()

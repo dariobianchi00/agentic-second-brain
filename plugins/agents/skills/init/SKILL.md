@@ -50,7 +50,7 @@ naming-examples: <pool>
 reserved: []
 ticket-column: Ticket
 inbound: none
-scheduler: none   # launchd | cron once /agents:schedule install has run
+scheduler: none   # launchd | systemd | cron | windows-task once /agents:schedule install has run
 harness: <claude | codex | gemini | opencode — the CLI that runs ticks and peer panes; omit the line for claude>
 ---
 
@@ -64,10 +64,10 @@ No workspace-specific overrides yet. The master applies in full.
 **`agents/tools/INDEX.md`** (if missing): copy `TEMPLATE/agents/tools/INDEX.md`, replacing `{{PRINCIPAL}}` with the principal.
 
 **Scheduler** (unless `--no-scheduler`; skip any part that exists):
-- `mkdir -p agents/scheduler/logs` and copy every file in `TEMPLATE/agents/scheduler/` except `scheduled-tasks.md` into `agents/scheduler/` (README.md, prompt.md, policies.md, tick.sh, gate.py, runrecord.py, health.py, tokencheck.py, notify.sh, the four installers, setup.sh, the `*.example*` files and the `test_*.py` files). Replace `{{PRINCIPAL}}` in the copies with the principal. `chmod +x` every `.sh` file. The scheduler is macOS-only (launchd); on Linux only `setup.sh` (cron) applies and the health/token checks are not installed.
+- `mkdir -p agents/scheduler/logs` and copy every file in `TEMPLATE/agents/scheduler/` except `scheduled-tasks.md` into `agents/scheduler/` (README.md, prompt.md, policies.md, tick.sh, gate.py, runrecord.py, health.py, tokencheck.py, notify.sh, the installers `install-launchd.sh`, `install-health-launchd.sh`, `install-tokencheck-launchd.sh`, `install-linux.sh` and `install-windows.ps1`, setup.sh, the `*.example*` files and the `test_*.py` files). Replace `{{PRINCIPAL}}` in the copies with the principal. `chmod +x` every `.sh` file. The scheduler runs on macOS (launchd), Linux (systemd user timers or cron, `install-linux.sh`) and Windows through WSL (Task Scheduler, `install-windows.ps1`; Claude Code must be installed inside WSL).
 - Copy `TEMPLATE/agents/scheduler/scheduled-tasks.md` to `agents/scheduled-tasks.md`, replacing `{{PRINCIPAL}}` and `YYYY-MM-DD` with today's date. The register ships with two disabled example tasks (`inbox-triage`, `weekly-review`).
 - Add `agents/scheduler/logs/`, `agents/scheduler/state/`, `agents/scheduler/runs/`, `agents/scheduler/notify.env`, `agents/scheduler/credentials.json` and `agents/scheduler/automations.json` to `.gitignore` if not already ignored.
-- Do **not** install the launchd/cron job here. Say: `Timer not installed. When you add a real task, run /agents:schedule install.`
+- Do **not** install the timer here. Say: `Timer not installed. When you add a real task, run /agents:schedule install.`
 
 **Workspace layout** (if chosen): `mkdir -p thinking work/projects work/operations knowledge/systems knowledge/people knowledge/processes knowledge/company outputs`. Copy `TEMPLATE/CONVENTIONS.md` to `CONVENTIONS.md` and `TEMPLATE/../PHILOSOPHY.md` to `PHILOSOPHY.md` only if each is missing. Put an empty `.gitkeep` in each new empty folder.
 

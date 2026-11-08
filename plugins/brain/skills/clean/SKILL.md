@@ -21,7 +21,7 @@ A full health check of a vault. Scans for structural issues, bloated files, stal
 
 **Goal:** Fewest files, smallest footprint, fastest context loading — without losing any active information.
 
-**Framework alignment:** if the vault runs an agent framework (e.g. the `agents` plugin, with `Agents/CONVENTIONS.md` extending the plugin's master conventions — workspace file wins on conflict), agent structure is governed by that framework. `/brain:clean` handles **archival and bloat** inside that structure; it never restructures agents — structural problems are `/agents:doctor <name>`'s job and are surfaced as a recommendation to run it, not fixed here.
+**Framework alignment:** if the vault runs an agent framework (e.g. the `agents` plugin, with `agents/CONVENTIONS.md` extending the plugin's master conventions — workspace file wins on conflict), agent structure is governed by that framework. `/brain:clean` handles **archival and bloat** inside that structure; it never restructures agents — structural problems are `/agents:doctor <name>`'s job and are surfaced as a recommendation to run it, not fixed here.
 
 ## Workflow
 
@@ -29,27 +29,27 @@ A full health check of a vault. Scans for structural issues, bloated files, stal
 
 **Vault detection** — the vault is the current working directory if it has a root `CLAUDE.md`. If not, ask which folder to clean (one question). One vault per run. If the user keeps several vaults, treat them as firewalled: never cross-reference, never move files between them.
 
-**Vault profile** — read the root `CLAUDE.md` (and `Agents/CONVENTIONS.md` if present) and build this profile before scanning. Use the defaults where the vault says nothing:
+**Vault profile** — read the root `CLAUDE.md` (and `agents/CONVENTIONS.md` if present) and build this profile before scanning. Use the defaults where the vault says nothing:
 
 | Setting | Default |
 |---|---|
 | Root system files (exclude from Check 1) | `CLAUDE.md`, `INDEX.md`, `ACTION_ITEMS.md`, `ACTION_ITEMS_ARCHIVE.md`, `CHANGELOG.md`, `CHANGELOG_ARCHIVE.md` — plus any other root file `CLAUDE.md` names as a system file (e.g. `MILESTONES.md`, `DECISIONS.md`, `NOTES.md`) |
 | Tracker | `ACTION_ITEMS.md` (sections **At Risk → Open → Completed**, status via tags). Optional: `MILESTONES.md` with evidence-based closure (Check 2b) |
 | Run log | root + area-level `CHANGELOG.md`. If the vault has none, the run log is a one-liner in root `NOTES.md` (+ `DECISIONS.md` only when a real choice was made) |
-| Agent layout | `Agents/<scope>/<name>/` or `Agents/<name>/` — whatever is on disk |
-| Commons | `Agents/_commons/<scope>/` (DEBATES, JOURNAL, HANDOFFS, RETRO) if present |
-| Scheduler | `Agents/scheduler/`, `Agents/scheduled-tasks.md` if present (the bundled scheduler is macOS-only, launchd) |
+| Agent layout | `agents/<scope>/<name>/` or `agents/<name>/` — whatever is on disk |
+| Commons | `agents/_commons/<scope>/` (DEBATES, JOURNAL, HANDOFFS, RETRO) if present |
+| Scheduler | `agents/scheduler/`, `agents/scheduled-tasks.md` if present (the bundled scheduler: launchd, systemd/cron, or Task Scheduler via WSL) |
 | Content folders (Check 5) | the top-level areas listed in `CLAUDE.md` (starter vault: the work area, the personal area, `Knowledge/`, `Network/`, `Inbox/`) |
 | Never-auto-load files (size/stat only — never Read contents) | `*_ARCHIVE.md`, plus any file `CLAUDE.md` marks sensitive (e.g. financials) |
 
 **Work Mode guard.** If the vault defines a screen-share / work mode that hides personal content, and it is active, REFUSE to run: `/brain:clean` scans the personal area and would surface sensitive content on screen. Respond: "Blocked — Work Mode active. `/brain:clean` touches personal content. Say `normal mode` to proceed." Do not scan.
 
 **Plugin-managed paths — never modify, never flag for merge/rename/delete:**
-- `Agents/scheduler/` (workspace copy of the plugin scheduler; refreshed by the framework's init command), `Agents/scheduled-tasks.md`, `Agents/tools/`, `Agents/skills/`
+- `agents/scheduler/` (workspace copy of the plugin scheduler; refreshed by the framework's init command), `agents/scheduled-tasks.md`, `agents/tools/`, `agents/skills/`
 - `.claude/skills/`, `.agents/skills/`
-- `Agents/**/peer/` (created on demand by `/agents:ask`)
-- `Agents/**/playbooks/.gitkeep`
-- `Agents/scheduler/logs/` — may be reported as a size note only; no action.
+- `agents/**/peer/` (created on demand by `/agents:ask`)
+- `agents/**/playbooks/.gitkeep`
+- `agents/scheduler/logs/` — may be reported as a size note only; no action.
 
 ---
 
@@ -87,16 +87,16 @@ Read each live `NOTES.md` (never `NOTES_ARCHIVE.md`).
 For each content folder in the profile, glob all `.md` files and compare against the relevant `INDEX.md` (if the vault has a single root `INDEX.md`, it is authoritative).
 - **Flag**: Files that exist but aren't listed in INDEX.md.
 - **Action**: Add to INDEX.md (or confirm deletion if truly orphaned).
-- **`Agents/` is exempt.** An agent framework indexes agents through `Agents/CONVENTIONS.md`, each agent's `MEMORY.md`, `memory/archive/INDEX.md` and `Agents/tools/INDEX.md` — not the vault INDEX. Do not add agent files to the vault INDEX and do not flag them as orphans.
+- **`agents/` is exempt.** An agent framework indexes agents through `agents/CONVENTIONS.md`, each agent's `MEMORY.md`, `memory/archive/INDEX.md` and `agents/tools/INDEX.md` — not the vault INDEX. Do not add agent files to the vault INDEX and do not flag them as orphans.
 
 #### Check 6 — INDEX.md accuracy (ghost entries)
-Read each `INDEX.md` and verify every listed file actually exists on disk. Include agent-side indexes: each agent's `MEMORY.md` (Standing + Sessions links), `memory/archive/INDEX.md`, `Agents/tools/INDEX.md`.
+Read each `INDEX.md` and verify every listed file actually exists on disk. Include agent-side indexes: each agent's `MEMORY.md` (Standing + Sessions links), `memory/archive/INDEX.md`, `agents/tools/INDEX.md`.
 - **Flag**: Entries pointing to non-existent files.
 - **Action**: Remove ghost entries. For `MEMORY.md` ghosts, check `memory/archive/` first — a consolidated entry may have moved; fix the link rather than deleting it.
 
 #### Check 7 — Stale files (60-day threshold)
 Use `find`/`stat` to identify `.md` files not modified in 60+ days. Cross-reference: if still referenced in INDEX.md as active or a knowledge/context file, deprioritise. Focus on: meeting transcripts, snapshots, project files, notes, `Inbox/`.
-- **EXCLUDE — staleness-immune agent files:** never flag anything under `Agents/**/memory/sessions/` or `Agents/**/memory/archive/` — dated historical records, not stale content. `Agents/**/memory/standing/` >90 days is a **re-verify** note only (surface, don't propose archiving — consolidation is Check 15). Never flag `role.md`, `soul.md`, `name.md`, `autonomy.md`, `tools.md`, `context.md` for age — they change rarely by design.
+- **EXCLUDE — staleness-immune agent files:** never flag anything under `agents/**/memory/sessions/` or `agents/**/memory/archive/` — dated historical records, not stale content. `agents/**/memory/standing/` >90 days is a **re-verify** note only (surface, don't propose archiving — consolidation is Check 15). Never flag `role.md`, `soul.md`, `name.md`, `autonomy.md`, `tools.md`, `context.md` for age — they change rarely by design.
 - **Flag**: Files both old (60+ days) AND apparently no longer active.
 - **Action**: Move to the appropriate `_archive/` subfolder (closed projects go to whatever archive folder the vault uses), OR delete if trivial.
 
@@ -108,14 +108,14 @@ Flag any `.md` file over 150KB or 500+ lines (`wc -l`).
 
 #### Check 9 — Undersized/stub files (merge candidates)
 Flag `.md` files under 500 bytes that aren't INDEX.md, NOTES.md, or system files.
-- **EXCLUDE — canonical agent files:** never flag `Agents/**/{role,soul,name,autonomy,tools,actions,actions-archive,context,MEMORY}.md`, anything in `memory/`, `playbooks/`, `peer/`, `memory/scheduled/inbox.md`, `Agents/tools/*.md`, `Agents/scheduler/*`. Short is by design (`soul.md` <20 lines, `name.md` <15; an empty `actions-archive.md` is created at agent birth and fills at the first 30-day archival). Merging them breaks the agent.
+- **EXCLUDE — canonical agent files:** never flag `agents/**/{role,soul,name,autonomy,tools,actions,actions-archive,context,MEMORY}.md`, anything in `memory/`, `playbooks/`, `peer/`, `memory/scheduled/inbox.md`, `agents/tools/*.md`, `agents/scheduler/*`. Short is by design (`soul.md` <20 lines, `name.md` <15; an empty `actions-archive.md` is created at agent birth and fills at the first 30-day archival). Merging them breaks the agent.
 - **Flag**: Tiny content files that add overhead without value.
 - **Action**: Suggest merging into the parent NOTES.md or a related file, then delete.
 
 #### Check 10 — Naming convention violations
 Glob all files. Content files: snake_case or Title_Case with underscores. Flag files with spaces (except known dated-transcript patterns), ambiguous names.
-- **EXCLUDE — framework naming:** the convention is *system files UPPERCASE, content files lowercase*. Lowercase agent directories (`Agents/<scope>/<name>/`), lowercase agent files (`role.md`, `actions-archive.md`), hyphenated session-memory slugs (`2026-08-21-tracker-purge.md`), `memory/scheduled/inbox.md`, playbook slugs — all compliant. Never flag them.
-- **AGENT-PATH GUARD (run before proposing ANY folder or file rename):** `grep -rIl "<name>" Agents/ .claude/ Instructions/` — if any `context.md`, `role.md`, `tools.md`, `memory/`, `playbooks/`, `scheduled-tasks.md`, `Agents/scheduler/`, `CLAUDE.md`, `INDEX.md` or skill references it, **flag-don't-rename**: the path is wired into an agent's startup cascade or a scheduled tick, and a rename silently breaks it. A rename either updates every referencing file in the same operation or is skipped. Space-named folders that several agents reference are left as-is unless the user explicitly asks for a coordinated rename.
+- **EXCLUDE — framework naming:** the convention is *system files UPPERCASE, content files lowercase*. Lowercase agent directories (`agents/<scope>/<name>/`), lowercase agent files (`role.md`, `actions-archive.md`), hyphenated session-memory slugs (`2026-08-21-tracker-purge.md`), `memory/scheduled/inbox.md`, playbook slugs — all compliant. Never flag them.
+- **AGENT-PATH GUARD (run before proposing ANY folder or file rename):** `grep -rIl "<name>" agents/ .claude/ Instructions/` — if any `context.md`, `role.md`, `tools.md`, `memory/`, `playbooks/`, `scheduled-tasks.md`, `agents/scheduler/`, `CLAUDE.md`, `INDEX.md` or skill references it, **flag-don't-rename**: the path is wired into an agent's startup cascade or a scheduled tick, and a rename silently breaks it. A rename either updates every referencing file in the same operation or is skipped. Space-named folders that several agents reference are left as-is unless the user explicitly asks for a coordinated rename.
 - **Action**: Rename with `mv` only when the guard passes.
 
 #### Check 11 — Duplicate/near-duplicate files
@@ -128,14 +128,14 @@ Look for very similar names in the same folder; grep for overlapping content sec
 Scan the vault for non-markdown files, excluding:
 - Hidden directories (`.obsidian/`, `.claude/`, `.agents/`, `.playwright-mcp/`, `.venv/`, `__pycache__/`)
 - `.DS_Store`, `.gitkeep`
-- Operational scripts and code (`Instructions/scripts/`, `Agents/scheduler/` — Python, shell, plists, logs)
+- Operational scripts and code (`Instructions/scripts/`, `agents/scheduler/` — Python, shell, plists, logs)
 - Databases the vault's tools depend on (e.g. a contacts `*.db` under `Network/`) — check `CLAUDE.md`
-- Agent portraits (`Agents/**/portrait.png`) — framework artefacts, keep.
+- Agent portraits (`agents/**/portrait.png`) — framework artefacts, keep.
 
 **Flag**: Any other non-MD file — images, PDFs, HTML exports, ZIPs, audio, config, JSX, and **migration leftovers** (`*.bak-YYYY-MM-DD` written by a framework migration — `context.md.bak-*`, `actions.md.bak-*`, `MEMORY.md.bak-*`, whether at agent root or already under `memory/archive/`).
 
 **Action per type:**
-- **`*.bak-*` migration files** → if the live file exists and is newer, propose deletion (archive copy to `Agents/_archive/<scope>/<name>/` first if the user wants belt-and-braces). Never touch a `.bak` whose live counterpart is missing — flag for `/agents:doctor`.
+- **`*.bak-*` migration files** → if the live file exists and is newer, propose deletion (archive copy to `agents/_archive/<scope>/<name>/` first if the user wants belt-and-braces). Never touch a `.bak` whose live counterpart is missing — flag for `/agents:doctor`.
 - **HTML exports/decks** → convert to MD and delete HTML
 - **Work PDFs/ZIPs** → propose moving to the user's work file store (e.g. a shared drive, if configured) — ask for the destination, never guess one
 - **Files that belong to a different vault or project** → flag, do not move (cross-vault moves are the user's call)
@@ -151,10 +151,10 @@ Evaluate folder granularity:
 - **Too granular**: a subfolder with 1-2 files — consider merging up.
 - **Too flat**: a folder with 20+ files on mixed topics — consider splitting.
 - **Misplaced**: files or folders in the wrong area (e.g. closed projects still in an active folder → the archive folder; only on a formal close per `CLAUDE.md`'s closure rule, if it has one).
-- **NOTE — `Agents/` is structured by the framework, not by taste.** Never flag an agent directory for "too granular" — `playbooks/` with only `.gitkeep`, an empty `peer/`, `memory/scheduled/` with one file, `memory/archive/{standing,sessions}/` are all mandated or on-demand. Never propose creating an `INDEX.md` inside `Agents/` beyond the ones the framework defines (`Agents/tools/INDEX.md`, `memory/archive/INDEX.md`). A **missing** canonical file (`tools.md`, `actions-archive.md`, `MEMORY.md`) is not `/brain:clean`'s to create — recommend `/agents:doctor <name>`.
+- **NOTE — `agents/` is structured by the framework, not by taste.** Never flag an agent directory for "too granular" — `playbooks/` with only `.gitkeep`, an empty `peer/`, `memory/scheduled/` with one file, `memory/archive/{standing,sessions}/` are all mandated or on-demand. Never propose creating an `INDEX.md` inside `agents/` beyond the ones the framework defines (`agents/tools/INDEX.md`, `memory/archive/INDEX.md`). A **missing** canonical file (`tools.md`, `actions-archive.md`, `MEMORY.md`) is not `/brain:clean`'s to create — recommend `/agents:doctor <name>`.
 
 #### Check 14 — Agent tracker hygiene (`actions.md`) — all agents
-Read every `Agents/**/actions.md`. Per the framework's tracker-hygiene rules:
+Read every `agents/**/actions.md`. Per the framework's tracker-hygiene rules:
 - **Completed rows older than 30 days** → move to `actions-archive.md` in the same directory (same table format; create the file if missing and note that `/agents:doctor` should have caught it).
 - **Ghosts in Open** — struck-through or completed rows still in the Open table → move to Completed (or archive if >30 days). No strikethrough-then-leave-it.
 - **`Last reviewed:` line** longer than one line / 600 chars → trim to the date; narrative goes to the most recent session memory or is dropped if already there.
@@ -170,7 +170,7 @@ For each agent, count `memory/standing/*.md` and `memory/sessions/*.md` and read
 - **`memory/reference/`** (where present) is agent-curated reference material — size note only.
 
 #### Check 16 — Agent commons archival (if commons exist)
-Read each `Agents/_commons/<scope>/` file. Archives follow the `<FILE>_ARCHIVE.md` pattern in the same folder:
+Read each `agents/_commons/<scope>/` file. Archives follow the `<FILE>_ARCHIVE.md` pattern in the same folder:
 - **DEBATES.md**: `Status: decided (...)` entries >30 days after decision date → `DEBATES_ARCHIVE.md` (create if missing). Open debates are never touched — only the user closes.
 - **HANDOFFS.md**: `[STATUS: closed]` entries >30 days → `HANDOFFS_ARCHIVE.md`. Open entries never touched; `/brain:clean` never closes a handoff (the sender closes, two-file rule).
 - **RETRO.md**: keep the last 2 ISO weeks live; older → `RETRO_ARCHIVE.md`.
@@ -225,7 +225,7 @@ Present each issue in this format:
 ─────────────────────────────────
 Issue 3 of 12 | 🔴 Critical
 
-FILE: Agents/<scope>/<agent>/memory/standing/  (7 entries — limit 5)
+FILE: agents/<scope>/<agent>/memory/standing/  (7 entries — limit 5)
 PROBLEM: 7 standing entries load at every <agent> startup (~11k tokens)
 IMPACT: Every <agent> session pays this before its first reply
 

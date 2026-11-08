@@ -23,7 +23,7 @@ Processes ONE meeting end-to-end with the rules of the **caller**. This file hol
 ## Step 0 — Resolve the caller and load the profile
 
 1. **Who is calling?**
-   - This session ran `/agents:start <name>` → that agent. Profile = `<agent dir>/meetings-profile.md` (e.g. `Agents/<scope>/<agent>/meetings-profile.md`).
+   - This session ran `/agents:start <name>` → that agent. Profile = `<agent dir>/meetings-profile.md` (e.g. `agents/<scope>/<agent>/meetings-profile.md`).
    - No agent active → the vault default: `Instructions/meetings-profile.md` in the current vault (working directory).
 2. **No profile found → stop.** Say which file was missing and offer to create it from `meetings-profile.template.md`. Never guess an agent, never borrow another vault's or agent's profile, never fall back to "how it used to work".
 3. **Read the profile in full, every run.** Do not work from memory of it or of this skill. (Known failure mode: in batches, the profile's extra steps, people assessments and the log get skipped because the steps were "remembered".)

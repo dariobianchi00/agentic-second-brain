@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the health-check LaunchAgent. macOS only (launchd).
+# Install the health-check LaunchAgent (macOS). Linux: install-linux.sh; Windows: install-windows.ps1.
 # Daily automation health check (health.py). Plain Python, no Claude.
 # Fires hourly at :30. health.py decides what to do: every fully-awake run checks that the
 # scheduler is still ticking; the first fully-awake run at/after 08:30 sends the daily report.
@@ -68,7 +68,7 @@ PLIST_EOF
 
 if [[ "${1:-}" == "--print-plist" ]]; then plist; exit 0; fi
 
-[[ "$(uname)" == "Darwin" ]] || { echo "Error: macOS only (launchd)."; exit 1; }
+[[ "$(uname)" == "Darwin" ]] || { echo "Error: this installer is for macOS (launchd). Linux: install-linux.sh · Windows: install-windows.ps1"; exit 1; }
 [[ -f "$SCHED/health.py" ]] || { echo "Error: $SCHED/health.py missing"; exit 1; }
 [[ -f "$SCHED/automations.json" ]] || { echo "Error: $SCHED/automations.json missing — copy automations.example.json to automations.json and edit it"; exit 1; }
 

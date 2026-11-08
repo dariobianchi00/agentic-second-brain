@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Idempotent launchd installer for the agent scheduler. macOS only (launchd).
+# Idempotent launchd installer for the agent scheduler (macOS). Linux: install-linux.sh;
+# Windows: install-windows.ps1 (Task Scheduler → WSL).
 # Ships with the `agents` plugin; copy agents/scheduler/ into the workspace first.
 #
 # Schedule: StartInterval 600 (every 10 min) + RunAtLoad true.
@@ -29,6 +30,8 @@ set -euo pipefail
 #   launchctl unload -w ~/Library/LaunchAgents/com.<workspace>.agent-scheduler.plist
 
 # Resolve workspace root (two levels up from this script) and derive the label from its folder name
+[[ "$(uname)" == "Darwin" ]] || { echo "Error: this installer is for macOS (launchd). Linux: install-linux.sh · Windows: install-windows.ps1"; exit 1; }
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SLUG="$(basename "$WORKSPACE" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9\n' '-')"

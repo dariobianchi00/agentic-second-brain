@@ -1,5 +1,5 @@
 {
-  "_about": "Automation registry for health.py (the daily health check). Copy to automations.json and edit. One entry per automation that health.py should watch. JSON, not YAML: /usr/bin/python3 (3.9, stdlib only) must parse it. Scheduler tasks are NOT listed here: health.py reads every `Enabled: true` task from agents/scheduled-tasks.md and only takes per-task extras (outputs, grace, fix) from `scheduler_tasks.overrides`. Paths: relative = workspace root, `~` = home, `{date}` = the slot's date (YYYY-MM-DD). Times are judged in AWAKE minutes (pmset -g log full-wake intervals), not wall-clock. `scope` = the run-record folder a finding lands in (default `general`). `fix` = the one-line hint printed next to a failure, keyed by failure code. Entry kinds: launchd-job (checks: plist, tick, slot), server (plist, http), mcp (mcp-registered, mcp-credentials, mcp-reachable). Rule of thumb: no new automation without an entry here.",
+  "_about": "Automation registry for health.py (the daily health check). Copy to automations.json and edit. One entry per automation that health.py should watch. JSON, not YAML: python3 (3.9+, stdlib only) must parse it. Scheduler tasks are NOT listed here: health.py reads every `Enabled: true` task from agents/scheduled-tasks.md and only takes per-task extras (outputs, grace, fix) from `scheduler_tasks.overrides`. Paths: relative = workspace root, `~` = home, `{date}` = the slot's date (YYYY-MM-DD). Times are judged in AWAKE minutes on macOS (pmset -g log full-wake intervals); on Linux and WSL there is no sleep data, so wall-clock. `scope` = the run-record folder a finding lands in (default `general`). `fix` = the one-line hint printed next to a failure, keyed by failure code. Entry kinds: timer-job (checks: timer, tick, slot; `launchd-job` and the check name `plist` are accepted as older spellings), server (timer, http), mcp (mcp-registered, mcp-credentials, mcp-reachable). The `timer` check reads the field for the current platform: `plist` (macOS launchd), `systemd_timer` or `cron_marker` (Linux, either one installed is enough), `windows_task` (Windows via WSL); a platform with no field set is skipped with an OK note. The installers name them <workspace>-agent-scheduler / -health-check / -token-check. Rule of thumb: no new automation without an entry here.",
   "version": 1,
   "daily_at": "08:30",
   "daily_cutoff": "20:30",
@@ -26,30 +26,35 @@
   "automations": [
     {
       "id": "agent-scheduler",
-      "kind": "launchd-job",
+      "kind": "timer-job",
       "label": "com.my-workspace.agent-scheduler",
       "plist": "~/Library/LaunchAgents/com.my-workspace.agent-scheduler.plist",
-      "schedule": "every 10 min (StartInterval 600) + RunAtLoad; tick.sh -> gate.py -> claude -p",
+      "systemd_timer": "my-workspace-agent-scheduler.timer",
+      "cron_marker": "my-workspace-agent-scheduler",
+      "windows_task": "my-workspace-agent-scheduler",
+      "schedule": "every 10 min + at login; tick.sh -> gate.py -> claude -p",
       "log": "agents/scheduler/logs/cron.log",
-      "checks": ["plist", "tick"],
+      "checks": ["timer", "tick"],
       "how_to_check": "Last `gate:` line in cron.log must be < 3h of AWAKE time old. A `starting` line with no later gate line = harness still running (hung after 3h).",
       "fix": {
         "plist": "Reinstall: `bash agents/scheduler/install-launchd.sh`",
-        "tick-stale": "`launchctl list | grep agent-scheduler` (loaded? last exit?); reinstall: `bash agents/scheduler/install-launchd.sh`",
+        "timer": "Reinstall: `bash agents/scheduler/install-linux.sh` (Linux) or `install-windows.ps1` (Windows)",
+        "tick-stale": "Is the timer loaded? macOS `launchctl list | grep agent-scheduler` · Linux `systemctl --user list-timers | grep agent-scheduler` or `crontab -l` · Windows `schtasks /Query /TN my-workspace-agent-scheduler`. Reinstall with your platform's installer (README § Install)",
         "hung": "A Claude run has been going for hours: `ps aux | grep 'claude -p'`; tail agents/scheduler/logs/cron.log"
       }
     },
     {
       "id": "rss-digest-fetch",
-      "kind": "launchd-job",
+      "kind": "timer-job",
       "label": "com.my-workspace.rss-digest",
       "plist": "~/Library/LaunchAgents/com.my-workspace.rss-digest.plist",
+      "systemd_timer": "my-workspace-rss-digest.timer",
       "schedule": "0 7 * * *",
       "grace_awake_min": 30,
       "outputs": ["Knowledge/Digest/{date}.md"],
       "log": "agents/scheduler/logs/rss-digest.log",
-      "checks": ["plist", "slot"],
-      "how_to_check": "Today's digest file written after the 07:00 slot once the Mac has been awake 30 min past 07:00. Log written but digest not = the fetch crashed.",
+      "checks": ["timer", "slot"],
+      "how_to_check": "Today's digest file written after the 07:00 slot once the machine has been awake 30 min past 07:00. Log written but digest not = the fetch crashed.",
       "fix": {
         "plist": "Reload: `launchctl load -w ~/Library/LaunchAgents/com.my-workspace.rss-digest.plist`",
         "missed": "Run the fetch script by hand and read its log",

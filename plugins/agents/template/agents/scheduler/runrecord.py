@@ -32,7 +32,7 @@ agents/<scope>/<agent>/ (multi-domain layout) → <scope>; agents/<agent>/ (sing
 --started defaults to $SCHED_TICK_STARTED (exported by tick.sh), else now.
 Env overrides (tests): SCHED_REGISTER, SCHED_RUNS_DIR, SCHED_STATE_FILE, SCHED_LOGS_DIR,
 SCHED_MAX_ATTEMPTS, NOTIFY_SH; NOTIFY_DRY_RUN is passed through to notify.sh.
-Stdlib only, Python 3.9-compatible (launchd uses /usr/bin/python3).
+Stdlib only, Python 3.9-compatible (the macOS launchd jobs use /usr/bin/python3). Unix only (fcntl): on Windows it runs inside WSL.
 """
 import argparse, datetime, fcntl, json, os, re, subprocess, sys, tempfile
 from contextlib import contextmanager

@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# Scheduler tick. macOS (launchd) is the supported runner: launchd calls this every
-# 10 minutes (StartInterval 600, plus RunAtLoad). setup.sh (cron) exists for other
-# Unix machines, but the wake check and caffeinate below are macOS-only and are
-# skipped where pmset/caffeinate are missing. Most ticks are idle: one cheap gate
-# line, no Claude.
+# Scheduler tick. Runs on macOS (launchd: install-launchd.sh), Linux (systemd user
+# timer or cron: install-linux.sh) and Windows via WSL (Task Scheduler calls
+# `wsl.exe -e bash -lc tick.sh`: install-windows.ps1). The timer calls this every
+# 10 minutes and at login. Most ticks are idle: one cheap gate line, no Claude.
+#
+# Platform: SCHED_PLATFORM=macos|linux|wsl overrides detection (tests). Only macOS
+# has the wake check (pmset) and caffeinate; on Linux/WSL both are skipped: systemd,
+# cron and Task Scheduler do not fire while the machine is suspended, so a tick
+# that runs is treated as awake.
 #
 # Step 1 is a cheap gate (gate.py, no Claude): parse agents/scheduled-tasks.md and
 # decide whether any enabled task is due right now. If none is, log one line and exit.
@@ -14,7 +18,7 @@
 # claude). Override with AGENT_HARNESS=<name>. AGENT_HARNESS_CMD="<cmd and flags>"
 # replaces the whole command; the prompt is appended as its last argument.
 #
-# Wake check: the harness only starts on a FULL wake. launchd also fires
+# Wake check (macOS only): the harness only starts on a FULL wake. launchd also fires
 # during DarkWake (Power Nap / maintenance wakes, lid closed, ~2-10 s) and the Mac
 # drops back to sleep mid-run, freezing the harness for hours.
 # Signal: `pmset -g systemstate` capabilities. Full wake = "CPU Graphics Audio
@@ -24,8 +28,10 @@
 # task due, so a later tick picks it up. If the probe itself fails we fail OPEN
 # (run) and log it. TICK_SKIP_WAKE_CHECK=1 bypasses the check for manual runs.
 #
-# The run is wrapped in `caffeinate -i` so the Mac does not idle-sleep
+# macOS: the run is wrapped in `caffeinate -i` so the Mac does not idle-sleep
 # mid-run. It does NOT stop a lid-close sleep on battery without an external display.
+# Linux/WSL: no equivalent is added (systemd-inhibit needs polkit rights for sleep
+# locks); keep the machine from suspending during scheduled runs yourself.
 #
 # Retry cap + outcome reporting: after the harness exits, `runrecord.py postrun`
 # checks each task the gate named. Last run not updated = a failed attempt: counted
@@ -38,7 +44,8 @@
 # + message. Tasks report their own outcome via `runrecord.py report` (prompt.md).
 #
 # Env overrides (tests): SCHED_REGISTER, SCHED_LOGS_DIR, SCHED_STATE_FILE,
-# SCHED_RUNS_DIR, TICK_PMSET_BIN, NOTIFY_DRY_RUN=1 (print instead of sending).
+# SCHED_RUNS_DIR, SCHED_PLATFORM, TICK_PMSET_BIN, TICK_CAFFEINATE_BIN,
+# NOTIFY_DRY_RUN=1 (print instead of sending).
 #
 # Usage: bash agents/scheduler/tick.sh              # normal tick
 #        bash agents/scheduler/tick.sh --dry-run    # print what is due + wake state, never call the harness
@@ -50,6 +57,18 @@ WORKSPACE="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REGISTER="${SCHED_REGISTER:-$WORKSPACE/agents/scheduled-tasks.md}"
 LOGS_DIR="${SCHED_LOGS_DIR:-$SCRIPT_DIR/logs}"
 PMSET="${TICK_PMSET_BIN:-/usr/bin/pmset}"
+CAFFEINATE="${TICK_CAFFEINATE_BIN:-/usr/bin/caffeinate}"
+
+# macos | linux | wsl. WSL = Linux kernel with "microsoft" in its version string.
+detect_platform() {
+  if [[ -n "${SCHED_PLATFORM:-}" ]]; then echo "$SCHED_PLATFORM"; return; fi
+  case "$(uname -s 2>/dev/null)" in
+    Darwin) echo macos ;;
+    Linux)  if grep -qi microsoft /proc/version 2>/dev/null; then echo wsl; else echo linux; fi ;;
+    *)      echo linux ;;  # other Unix: same rules as Linux (no wake probe, no caffeinate)
+  esac
+}
+PLATFORM="$(detect_platform)"
 mkdir -p "$LOGS_DIR"
 # Shared with gate.py / runrecord.py and inherited by the harness (its runrecord calls).
 export SCHED_REGISTER="$REGISTER" SCHED_LOGS_DIR="$LOGS_DIR"
@@ -62,6 +81,9 @@ DRY_RUN=false
 WAKE_REASON=""
 wake_check() {
   local out caps
+  if [[ "$PLATFORM" != "macos" ]]; then
+    WAKE_REASON="no wake probe on $PLATFORM (assume awake: the timer does not fire while suspended)"; return 0
+  fi
   if [[ ! -x "$PMSET" ]]; then WAKE_REASON="probe error: $PMSET missing"; return 2; fi
   if ! out="$("$PMSET" -g systemstate 2>&1)"; then
     WAKE_REASON="probe error: pmset -g systemstate failed: $(printf '%s' "$out" | head -1)"; return 2
@@ -82,7 +104,7 @@ if [[ "${1:-}" == "--wake-check" ]]; then
   exit 0
 fi
 
-# nvm: launchd/cron start with a bare PATH; npx-based MCP servers need node.
+# nvm: launchd/systemd/cron start with a bare PATH; npx-based MCP servers need node.
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 # shellcheck disable=SC1091
 [[ -s "$NVM_DIR/nvm.sh" ]] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1 || true
@@ -111,6 +133,7 @@ fi
 
 if $DRY_RUN; then
   echo "due: $DUE"
+  echo "platform: $PLATFORM"
   wrc=0; wake_check || wrc=$?
   echo "wake: rc=$wrc ($WAKE_REASON)$([[ "${TICK_SKIP_WAKE_CHECK:-}" == "1" ]] && echo ' [TICK_SKIP_WAKE_CHECK=1: would be ignored]')"
   STATE_FILE="${SCHED_STATE_FILE:-$SCRIPT_DIR/state/attempts.json}"
@@ -161,6 +184,7 @@ find_bin() {
   elif [[ -x "$HOME/.claude/bin/$1" ]]; then echo "$HOME/.claude/bin/$1"
   elif [[ -x "/usr/local/bin/$1" ]]; then echo "/usr/local/bin/$1"
   elif [[ -x "$HOME/.local/bin/$1" ]]; then echo "$HOME/.local/bin/$1"
+  elif [[ -x "$HOME/.npm-global/bin/$1" ]]; then echo "$HOME/.npm-global/bin/$1"
   elif [[ -x "/opt/homebrew/bin/$1" ]]; then echo "/opt/homebrew/bin/$1"
   fi
 }
@@ -192,9 +216,10 @@ else
   esac
 fi
 
-# caffeinate -i: hold an idle-sleep assertion for exactly the life of the harness process.
+# macOS caffeinate -i: hold an idle-sleep assertion for exactly the life of the harness
+# process. Not on Linux/WSL (see header).
 CAFF=()
-[[ -x /usr/bin/caffeinate ]] && CAFF=(/usr/bin/caffeinate -i)
+[[ "$PLATFORM" == "macos" && -x "$CAFFEINATE" ]] && CAFF=("$CAFFEINATE" -i)
 
 echo "$(date '+%Y-%m-%d %H:%M') gate: due=[$DUE] — starting $HARNESS$WAKE_NOTE" >> "$LOGS_DIR/cron.log"
 # ${ARR[@]+...} keeps bash 3.2 (macOS /bin/bash) happy with an empty array under set -u

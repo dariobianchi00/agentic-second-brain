@@ -51,10 +51,10 @@ If invoked with no argument, ask what idea to expand (or offer `list`).
 ### Step 2 — Survey the user's actual stack (this is what makes the card useful)
 Before writing the "Fit" lens, ground yourself in what the user actually has. **Read the live sources each time — never rely on a remembered or hard-coded roster.** Check whichever of these exist:
 - **Skills:** list the installed skills — user-level (`ls ~/.claude/skills/`), project-level (`ls .claude/skills/`), and plugin skills (the skills listed as available in this session, e.g. `/brain:*`).
-- **Agents + scopes:** the agents table in the vault's root `CLAUDE.md` and `Agents/CONVENTIONS.md` (if present) — canonical roles and scope boundaries. Also `ls Agents/` for what's on disk.
+- **Agents + scopes:** the agents table in the vault's root `CLAUDE.md` and `agents/CONVENTIONS.md` (if present) — canonical roles and scope boundaries. Also `ls agents/` for what's on disk.
 - **MCP servers:** the MCP tools available in this session, plus any MCP/automation doc the vault keeps (e.g. under `Instructions/`, as referenced from `CLAUDE.md`). If none is documented, `claude mcp list` output (ask the user to run it) is the source.
-- **Scheduled routines:** `Instructions/Routines/`, `Instructions/scripts/`, and any scheduler register (e.g. `Agents/scheduled-tasks.md`) if present.
-- **Conventions:** root `CLAUDE.md` + `Agents/CONVENTIONS.md` (memory schema, action-item format, adversarial mode, one-by-one approvals).
+- **Scheduled routines:** `Instructions/Routines/`, `Instructions/scripts/`, and any scheduler register (e.g. `agents/scheduled-tasks.md`) if present.
+- **Conventions:** root `CLAUDE.md` + `agents/CONVENTIONS.md` (memory schema, action-item format, adversarial mode, one-by-one approvals).
 
 Only cite tools that **exist**. If the idea needs something the user doesn't have, say "new build — no current tool covers this" — that's a valid, honest fit answer. Don't describe a specific agent's role from memory; read it.
 
